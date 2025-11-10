@@ -11,6 +11,11 @@ This repository contains my complete journey through the **Kaggle 5-Day AI Agent
 
 The course covers foundational concepts of AI agents using Google's Agent Development Kit (ADK) and Gemini 2.5 Flash Lite. I've built multiple applications showcasing different agent patterns and deployment strategies, making AI agents accessible through beautiful web interfaces.
 
+## Learnings
+
+- [DAY_1A_LEARNINGS.md](DAY_1A_LEARNINGS.md) - Day 1A comprehensive guide
+- [DAY_1B_LEARNINGS.md](DAY_1B_LEARNINGS.md) - Day 1B Multi-agent architectures guide
+
 ## Project Features
 
 - **Multiple Deployment Options**: Flask web app, Gradio interface, and Hugging Face Spaces
@@ -24,13 +29,6 @@ The course covers foundational concepts of AI agents using Google's Agent Develo
 1. **Flask Web Chat** - Custom web interface (`web-chat/`)
 2. **Gradio App** - Production Gradio interface (`app.py`)
 3. **Multi-Agent App** - Advanced multi-agent demo (`app_multiagent.py`)
-
-## Documentation
-
-- [DAY_1A_LEARNINGS.md](DAY_1A_LEARNINGS.md) - Day 1A comprehensive guide
-- [DAY_1B_LEARNINGS.md](DAY_1B_LEARNINGS.md) - Day 1B Multi-agent architectures guide
-- [GRADIO_DEPLOYMENT.md](GRADIO_DEPLOYMENT.md) - Deployment guide
-
 
 ## Resources
 
