@@ -12,7 +12,15 @@ from google.adk.runners import InMemoryRunner
 from google.adk.tools import google_search
 
 # Set up API key
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+if not GOOGLE_API_KEY:
+    raise ValueError(
+        "GOOGLE_API_KEY environment variable is required.\n"
+        "Set it with: export GOOGLE_API_KEY=your-key"
+    )
+
+os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "FALSE"
 
 # Create the AI agent

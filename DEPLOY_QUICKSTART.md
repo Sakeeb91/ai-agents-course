@@ -52,7 +52,7 @@ After the script finishes, it will give you a link. Click it and:
 2. Scroll to "Repository secrets"
 3. Click "New secret"
 4. **Name**: `GOOGLE_API_KEY`
-5. **Value**: `AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q`
+5. **Value**: `your-google-api-key-here`
 6. Click "Save"
 
 ---

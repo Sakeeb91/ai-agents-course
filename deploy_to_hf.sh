@@ -111,7 +111,7 @@ echo "  1. Visit: https://huggingface.co/spaces/${FULL_REPO}/settings"
 echo "  2. Scroll to 'Repository secrets'"
 echo "  3. Click 'New secret'"
 echo "  4. Name: GOOGLE_API_KEY"
-echo "  5. Value: AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q"
+echo "  5. Value: your-google-api-key-here"
 echo "  6. Click 'Save'"
 echo ""
 

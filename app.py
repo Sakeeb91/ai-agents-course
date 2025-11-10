@@ -17,8 +17,15 @@ from google.adk.agents import Agent
 from google.adk.runners import InMemoryRunner
 from google.adk.tools import google_search
 
-# Get API key from environment (for Hugging Face Spaces) or use default
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q")
+# Get API key from environment (required for Hugging Face Spaces)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+if not GOOGLE_API_KEY:
+    raise ValueError(
+        "GOOGLE_API_KEY environment variable is required.\n"
+        "For Hugging Face Spaces: Add it as a secret in Space settings.\n"
+        "For local development: Set it with 'export GOOGLE_API_KEY=your-key'"
+    )
 
 # Set up environment
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY

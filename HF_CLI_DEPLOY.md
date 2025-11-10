@@ -74,7 +74,7 @@ You need to add your Google API key as a secret. Do this via the web:
 3. Scroll to "Repository secrets"
 4. Click "New secret"
 5. **Name**: `GOOGLE_API_KEY`
-6. **Value**: `AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q`
+6. **Value**: `your-google-api-key-here`
 7. Click "Save"
 
 ## ⏳ Step 6: Wait for Build

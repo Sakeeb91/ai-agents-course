@@ -359,13 +359,11 @@ kagglae agent course/
 ## 🔑 API Keys & Configuration
 
 ### Google AI API Key:
-```
-AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q
-```
+Set as environment variable (not hardcoded for security)
 
 ### Environment Variables:
 ```bash
-GOOGLE_API_KEY=AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q
+GOOGLE_API_KEY=your-google-api-key-here
 GOOGLE_GENAI_USE_VERTEXAI=FALSE
 ```
 

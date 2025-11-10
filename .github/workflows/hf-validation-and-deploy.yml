@@ -1,0 +1,472 @@
+name: Hugging Face Validation and Deployment
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  PYTHON_VERSION: '3.10'
+  HF_USERNAME: ${{ secrets.HF_USERNAME || 'Sakeeb' }}
+
+jobs:
+  # ============================================================================
+  # Stage 1: Syntax & Import Validation (No API costs)
+  # ============================================================================
+  syntax-validation:
+    name: Syntax & Import Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check required files exist
+        run: |
+          echo "🔍 Checking required files..."
+          if [ ! -f "app.py" ]; then
+            echo "❌ app.py not found!"
+            exit 1
+          fi
+          if [ ! -f "app_multiagent.py" ]; then
+            echo "❌ app_multiagent.py not found!"
+            exit 1
+          fi
+          if [ ! -f "requirements.txt" ]; then
+            echo "❌ requirements.txt not found!"
+            exit 1
+          fi
+          echo "✅ All required files found"
+
+      - name: Validate Python syntax - app.py
+        run: |
+          echo "🔍 Validating syntax for app.py..."
+          python -m py_compile app.py
+          echo "✅ app.py syntax is valid"
+
+      - name: Validate Python syntax - app_multiagent.py
+        run: |
+          echo "🔍 Validating syntax for app_multiagent.py..."
+          python -m py_compile app_multiagent.py
+          echo "✅ app_multiagent.py syntax is valid"
+
+      - name: Check imports (without executing)
+        run: |
+          echo "🔍 Checking imports..."
+          python -c "
+          import ast
+          import sys
+          
+          def check_imports(filepath):
+              with open(filepath, 'r') as f:
+                  tree = ast.parse(f.read(), filename=filepath)
+              print(f'✅ {filepath} parsed successfully')
+          
+          check_imports('app.py')
+          check_imports('app_multiagent.py')
+          print('✅ All imports syntax validated')
+          "
+
+  # ============================================================================
+  # Stage 2: Dependency Installation Check
+  # ============================================================================
+  dependency-check:
+    name: Dependency Installation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✅ Dependencies installed"
+
+      - name: Verify critical packages
+        run: |
+          echo "🔍 Verifying critical packages..."
+          python -c "
+          import google.adk
+          import gradio
+          print('✅ google-adk installed:', google.adk.__version__ if hasattr(google.adk, '__version__') else 'installed')
+          print('✅ gradio installed:', gradio.__version__)
+          print('✅ All critical packages verified')
+          "
+
+  # ============================================================================
+  # Stage 3: App Initialization Tests (No API costs)
+  # ============================================================================
+  initialization-tests:
+    name: App Initialization Tests
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, dependency-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up environment variables
+        run: |
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> $GITHUB_ENV
+          echo "GOOGLE_GENAI_USE_VERTEXAI=FALSE" >> $GITHUB_ENV
+
+      - name: Test app.py initialization
+        run: |
+          echo "🧪 Testing app.py initialization..."
+          python << 'EOF'
+          import os
+          import sys
+          
+          # Set environment
+          os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "test-key")
+          os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "FALSE"
+          
+          # Import app module without executing main block
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("app", "app.py")
+          app_module = importlib.util.module_from_spec(spec)
+          
+          # Execute module (this will initialize agents)
+          try:
+              spec.loader.exec_module(app_module)
+              print("✅ app.py imported successfully")
+              print("✅ Agents initialized")
+              print("✅ Gradio interface created")
+          except Exception as e:
+              print(f"❌ Error initializing app.py: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          EOF
+
+      - name: Test app_multiagent.py initialization
+        run: |
+          echo "🧪 Testing app_multiagent.py initialization..."
+          python << 'EOF'
+          import os
+          import sys
+          
+          # Set environment
+          os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "test-key")
+          os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "FALSE"
+          
+          # Import app module without executing main block
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("app_multiagent", "app_multiagent.py")
+          app_module = importlib.util.module_from_spec(spec)
+          
+          # Execute module (this will initialize all agents)
+          try:
+              spec.loader.exec_module(app_module)
+              print("✅ app_multiagent.py imported successfully")
+              print("✅ Simple agent initialized")
+              print("✅ Research system initialized")
+              print("✅ Blog pipeline initialized")
+              print("✅ Parallel research system initialized")
+              print("✅ All Gradio interfaces created")
+          except Exception as e:
+              print(f"❌ Error initializing app_multiagent.py: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          EOF
+
+  # ============================================================================
+  # Stage 4: App Functionality Tests - app.py (Requires API key)
+  # ============================================================================
+  functionality-test-app:
+    name: Functionality Test - app.py
+    runs-on: ubuntu-latest
+    needs: [initialization-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up environment variables
+        run: |
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> $GITHUB_ENV
+          echo "GOOGLE_GENAI_USE_VERTEXAI=FALSE" >> $GITHUB_ENV
+
+      - name: Test app.py functionality
+        timeout-minutes: 5
+        run: |
+          echo "🧪 Testing app.py functionality..."
+          python << 'EOF'
+          import os
+          import sys
+          import asyncio
+          
+          # Set environment
+          os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+          if not os.environ.get("GOOGLE_API_KEY"):
+              print("❌ GOOGLE_API_KEY not set")
+              sys.exit(1)
+          os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "FALSE"
+          
+          # Import app
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("app", "app.py")
+          app_module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(app_module)
+          
+          # Test agent with minimal query
+          try:
+              print("🔍 Testing agent with query: 'Hello'")
+              loop = asyncio.new_event_loop()
+              asyncio.set_event_loop(loop)
+              response = loop.run_until_complete(app_module.runner.run_debug("Hello"))
+              loop.close()
+              
+              if response and len(response) > 0:
+                  response_text = response[0].content.parts[0].text
+                  print(f"✅ Agent responded: {response_text[:100]}...")
+                  print("✅ app.py functionality test passed")
+              else:
+                  print("❌ No response from agent")
+                  sys.exit(1)
+          except Exception as e:
+              print(f"❌ Error testing app.py functionality: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          EOF
+
+  # ============================================================================
+  # Stage 5: App Functionality Tests - app_multiagent.py (Requires API key)
+  # ============================================================================
+  functionality-test-multiagent:
+    name: Functionality Test - app_multiagent.py
+    runs-on: ubuntu-latest
+    needs: [initialization-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up environment variables
+        run: |
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> $GITHUB_ENV
+          echo "GOOGLE_GENAI_USE_VERTEXAI=FALSE" >> $GITHUB_ENV
+
+      - name: Test app_multiagent.py functionality
+        timeout-minutes: 10
+        run: |
+          echo "🧪 Testing app_multiagent.py functionality..."
+          python << 'EOF'
+          import os
+          import sys
+          import asyncio
+          
+          # Set environment
+          os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+          if not os.environ.get("GOOGLE_API_KEY"):
+              print("❌ GOOGLE_API_KEY not set")
+              sys.exit(1)
+          os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "FALSE"
+          
+          # Import app
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("app_multiagent", "app_multiagent.py")
+          app_module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(app_module)
+          
+          # Test simple agent
+          try:
+              print("🔍 Testing simple agent...")
+              loop = asyncio.new_event_loop()
+              asyncio.set_event_loop(loop)
+              response = loop.run_until_complete(app_module.simple_runner.run_debug("Hello"))
+              loop.close()
+              
+              if response and len(response) > 0:
+                  response_text = response[0].content.parts[0].text
+                  print(f"✅ Simple agent responded: {response_text[:100]}...")
+              else:
+                  print("❌ No response from simple agent")
+                  sys.exit(1)
+          except Exception as e:
+              print(f"❌ Error testing simple agent: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          
+          # Test research system (minimal query to reduce costs)
+          try:
+              print("🔍 Testing research system...")
+              loop = asyncio.new_event_loop()
+              asyncio.set_event_loop(loop)
+              response = loop.run_until_complete(app_module.research_runner.run_debug("AI"))
+              loop.close()
+              
+              if response and len(response) > 0:
+                  response_text = response[0].content.parts[0].text
+                  print(f"✅ Research system responded: {response_text[:100]}...")
+              else:
+                  print("❌ No response from research system")
+                  sys.exit(1)
+          except Exception as e:
+              print(f"❌ Error testing research system: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          
+          # Test blog pipeline (minimal query)
+          try:
+              print("🔍 Testing blog pipeline...")
+              loop = asyncio.new_event_loop()
+              asyncio.set_event_loop(loop)
+              response = loop.run_until_complete(app_module.blog_runner.run_debug("Test topic"))
+              loop.close()
+              
+              if response and len(response) > 0:
+                  response_text = response[0].content.parts[0].text
+                  print(f"✅ Blog pipeline responded: {response_text[:100]}...")
+              else:
+                  print("❌ No response from blog pipeline")
+                  sys.exit(1)
+          except Exception as e:
+              print(f"❌ Error testing blog pipeline: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          
+          print("✅ All app_multiagent.py functionality tests passed")
+          EOF
+
+  # ============================================================================
+  # Stage 6: Deployment to Hugging Face Spaces
+  # ============================================================================
+  deploy:
+    name: Deploy to Hugging Face Spaces
+    runs-on: ubuntu-latest
+    needs: [functionality-test-app, functionality-test-multiagent]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Hugging Face CLI
+        run: |
+          echo "📦 Installing Hugging Face CLI..."
+          pip install huggingface_hub[cli]
+          echo "✅ Hugging Face CLI installed"
+
+      - name: Login to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+        run: |
+          echo "🔐 Logging in to Hugging Face..."
+          if [ -z "$HF_TOKEN" ]; then
+            echo "❌ HUGGINGFACE_TOKEN secret not set"
+            exit 1
+          fi
+          huggingface-cli login --token $HF_TOKEN
+          echo "✅ Logged in to Hugging Face"
+
+      - name: Deploy app.py to Space
+        env:
+          HF_USERNAME: ${{ env.HF_USERNAME }}
+        run: |
+          echo "🚀 Deploying app.py to Hugging Face Space..."
+          SPACE_NAME="ai-agent-chat"
+          FULL_REPO="${HF_USERNAME}/${SPACE_NAME}"
+          
+          # Check if Space exists, create if not
+          if ! huggingface-cli repo info "spaces/$FULL_REPO" &> /dev/null; then
+            echo "📝 Creating Space: $FULL_REPO"
+            huggingface-cli repo create "$SPACE_NAME" --type space --space_sdk gradio || true
+          fi
+          
+          # Upload files
+          echo "📤 Uploading app.py..."
+          huggingface-cli upload "spaces/$FULL_REPO" app.py app.py --repo-type space
+          
+          echo "📤 Uploading requirements.txt..."
+          huggingface-cli upload "spaces/$FULL_REPO" requirements.txt requirements.txt --repo-type space
+          
+          echo "✅ app.py deployed to: https://huggingface.co/spaces/$FULL_REPO"
+          echo "🌐 Live at: https://${HF_USERNAME}-${SPACE_NAME}.hf.space"
+
+      - name: Deploy app_multiagent.py to Space
+        env:
+          HF_USERNAME: ${{ env.HF_USERNAME }}
+        run: |
+          echo "🚀 Deploying app_multiagent.py to Hugging Face Space..."
+          SPACE_NAME="ai-multi-agent-chat"
+          FULL_REPO="${HF_USERNAME}/${SPACE_NAME}"
+          
+          # Check if Space exists, create if not
+          if ! huggingface-cli repo info "spaces/$FULL_REPO" &> /dev/null; then
+            echo "📝 Creating Space: $FULL_REPO"
+            huggingface-cli repo create "$SPACE_NAME" --type space --space_sdk gradio || true
+          fi
+          
+          # Upload files (rename app_multiagent.py to app.py for HF Spaces)
+          echo "📤 Uploading app_multiagent.py as app.py..."
+          huggingface-cli upload "spaces/$FULL_REPO" app_multiagent.py app.py --repo-type space
+          
+          echo "📤 Uploading requirements.txt..."
+          huggingface-cli upload "spaces/$FULL_REPO" requirements.txt requirements.txt --repo-type space
+          
+          echo "✅ app_multiagent.py deployed to: https://huggingface.co/spaces/$FULL_REPO"
+          echo "🌐 Live at: https://${HF_USERNAME}-${SPACE_NAME}.hf.space"
+
+      - name: Deployment Summary
+        env:
+          HF_USERNAME: ${{ env.HF_USERNAME }}
+        run: |
+          echo "## 🎉 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployed Spaces:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Simple Agent**: https://${HF_USERNAME}-ai-agent-chat.hf.space" >> $GITHUB_STEP_SUMMARY
+          echo "- **Multi-Agent**: https://${HF_USERNAME}-ai-multi-agent-chat.hf.space" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note**: Don't forget to add GOOGLE_API_KEY as a secret in Space settings!" >> $GITHUB_STEP_SUMMARY
+

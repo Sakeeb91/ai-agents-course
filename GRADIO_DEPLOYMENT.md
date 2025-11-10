@@ -64,7 +64,7 @@ git push hf main
 2. Scroll to "Repository secrets"
 3. Click "New secret"
 4. Name: `GOOGLE_API_KEY`
-5. Value: `AIzaSyBR3sPTYuwKGkBBkAKvV13vBrqxBAfWL6Q`
+5. Value: `your-google-api-key-here`
 6. Click "Save"
 
 ### Step 5: Wait for Build
