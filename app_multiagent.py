@@ -71,7 +71,11 @@ def build_research_system():
         name="SummarizerAgent",
         model="gemini-2.5-flash-lite",
         instruction="""Read the provided research findings: {research_findings}
-        Create a concise summary as a bulleted list with 3-5 key points.""",
+        Create a concise summary in proper markdown format with:
+        - A clear header (## Summary)
+        - Bulleted list with 3-5 key points
+        - Use **bold** for important terms
+        Use proper markdown formatting.""",
         output_key="final_summary",
     )
 
@@ -81,7 +85,8 @@ def build_research_system():
         instruction="""You are a research coordinator. Your goal is to answer the user's query by orchestrating a workflow.
         1. First, you MUST call the `ResearchAgent` tool to find relevant information.
         2. Next, after receiving the research findings, you MUST call the `SummarizerAgent` tool to create a concise summary.
-        3. Finally, present the final summary clearly to the user as your response.""",
+        3. Finally, present the final summary in proper markdown format to the user as your response.
+        Format your final output with clear markdown headers, bullet points, and **bold** for emphasis.""",
         tools=[
             AgentTool(research_agent),
             AgentTool(summarizer_agent)
@@ -117,7 +122,8 @@ def build_blog_pipeline():
         model="gemini-2.5-flash-lite",
         instruction="""Edit this draft: {blog_draft}
         Your task is to polish the text by fixing any grammatical errors,
-        improving the flow and sentence structure, and enhancing overall clarity.""",
+        improving the flow and sentence structure, and enhancing overall clarity.
+        Output the final blog post in proper markdown format with headers (##), bold (**), and other formatting.""",
         output_key="final_blog",
     )
 
@@ -257,9 +263,78 @@ def blog_chat(topic):
 
 
 def parallel_chat(briefing_type):
-    """Parallel Research demo"""
-    query = f"Run the daily executive briefing on {briefing_type}"
-    return run_agent_query(parallel_runner, query)
+    """Parallel Research demo - dynamically build agents based on topics"""
+    if not briefing_type or not briefing_type.strip():
+        return "Please select briefing topics."
+
+    # Parse the topics
+    topics = [t.strip() for t in briefing_type.split(",")]
+
+    if len(topics) != 3:
+        return f"Please provide exactly 3 topics separated by commas. Got {len(topics)} topics."
+
+    # Build dynamic parallel research system
+    agent1 = Agent(
+        name=f"{topics[0]}Researcher",
+        model="gemini-2.5-flash-lite",
+        instruction=f"""Research the latest trends in {topics[0]}. Include 3 key developments,
+        the main companies/organizations involved, and the potential impact. Keep the report concise (100-150 words).""",
+        tools=[google_search],
+        output_key=f"research_1",
+    )
+
+    agent2 = Agent(
+        name=f"{topics[1]}Researcher",
+        model="gemini-2.5-flash-lite",
+        instruction=f"""Research recent developments in {topics[1]}. Include 3 significant advances,
+        their practical applications, and estimated timelines. Keep the report concise (100-150 words).""",
+        tools=[google_search],
+        output_key=f"research_2",
+    )
+
+    agent3 = Agent(
+        name=f"{topics[2]}Researcher",
+        model="gemini-2.5-flash-lite",
+        instruction=f"""Research current trends in {topics[2]}. Include 3 key trends,
+        their market implications, and the future outlook. Keep the report concise (100-150 words).""",
+        tools=[google_search],
+        output_key=f"research_3",
+    )
+
+    aggregator = Agent(
+        name="AggregatorAgent",
+        model="gemini-2.5-flash-lite",
+        instruction=f"""Combine these three research findings into a single executive summary:
+
+        **{topics[0]} Trends:**
+        {{research_1}}
+
+        **{topics[1]} Developments:**
+        {{research_2}}
+
+        **{topics[2]} Innovations:**
+        {{research_3}}
+
+        Your summary should highlight common themes, surprising connections, and the most important
+        key takeaways from all three reports. Format your output in clear markdown with headers and bullet points.
+        The final summary should be around 250-300 words.""",
+        output_key="executive_summary",
+    )
+
+    parallel_team = ParallelAgent(
+        name="DynamicResearchTeam",
+        sub_agents=[agent1, agent2, agent3],
+    )
+
+    dynamic_system = SequentialAgent(
+        name="DynamicResearchSystem",
+        sub_agents=[parallel_team, aggregator],
+    )
+
+    dynamic_runner = InMemoryRunner(agent=dynamic_system)
+
+    query = f"Generate an executive briefing on {briefing_type}"
+    return run_agent_query(dynamic_runner, query)
 
 
 # ============================================================================
@@ -387,10 +462,8 @@ with gr.Blocks(
 
             research_btn = gr.Button("🔬 Research & Summarize", variant="primary")
 
-            research_output = gr.Textbox(
+            research_output = gr.Markdown(
                 label="Summary",
-                lines=15,
-                show_copy_button=True,
             )
 
             gr.Examples(
@@ -421,10 +494,8 @@ with gr.Blocks(
 
             blog_btn = gr.Button("📝 Generate Blog Post", variant="primary")
 
-            blog_output = gr.Textbox(
+            blog_output = gr.Markdown(
                 label="Blog Post",
-                lines=20,
-                show_copy_button=True,
             )
 
             gr.Examples(
@@ -460,10 +531,8 @@ with gr.Blocks(
 
             parallel_btn = gr.Button("📈 Generate Executive Briefing", variant="primary")
 
-            parallel_output = gr.Textbox(
+            parallel_output = gr.Markdown(
                 label="Executive Summary",
-                lines=20,
-                show_copy_button=True,
             )
 
             parallel_btn.click(parallel_chat, inputs=briefing_type, outputs=parallel_output)
