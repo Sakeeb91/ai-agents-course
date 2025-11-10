@@ -1,4 +1,9 @@
-# Kaggle 5-Day AI Agents Course - Day 1A
+# AI Agents Course - Complete Project
+
+> A comprehensive AI agent chat application built with Google's Agent Development Kit (ADK) and Gemini 2.5 Flash Lite, featuring multiple deployment options and beautiful custom UIs.
+
+**Live Demo**: [Hugging Face Space](https://sakeeb-ai-agent-chat.hf.space)
+**Repository**: [GitHub](https://github.com/Sakeeb91/ai-agents-course)
 
 ## Completed Tasks ✅
 
@@ -61,13 +66,30 @@ Your agent can:
 - Combine multiple sources of information
 - Provide grounded, up-to-date answers
 
-## Next Steps
+## Project Features
 
-Continue to Day 1B to learn about **architecting multi-agent systems**!
+- **Multiple Deployment Options**: Flask web app, Gradio interface, and Hugging Face Spaces
+- **Beautiful UI**: Orange-mauve gradient theme with glassmorphism effects
+- **Rich Markdown Support**: Code highlighting, tables, lists, and more
+- **Multi-Agent Architectures**: LLM orchestration, Sequential, and Parallel workflows
+- **Production Ready**: Deployed and live on Hugging Face
+
+## Applications
+
+1. **Flask Web Chat** - Custom web interface (`web-chat/`)
+2. **Gradio App** - Production Gradio interface (`app.py`)
+3. **Multi-Agent App** - Advanced multi-agent demo (`app_multiagent.py`)
+
+## Documentation
+
+- [DAY_1A_LEARNINGS.md](DAY_1A_LEARNINGS.md) - Day 1A comprehensive guide
+- [DAY_1B_LEARNINGS.md](DAY_1B_LEARNINGS.md) - Multi-agent architectures guide
+- [GRADIO_DEPLOYMENT.md](GRADIO_DEPLOYMENT.md) - Deployment guide
+- [CLAUDE.md](CLAUDE.md) - Complete session summary
 
 ## Resources
 
 - [ADK Documentation](https://google.github.io/adk-docs/)
-- [ADK Quickstart for Python](https://google.github.io/adk-docs/get-started/python/)
-- [ADK Agents Overview](https://google.github.io/adk-docs/agents/)
-- [ADK Tools Overview](https://google.github.io/adk-docs/tools/)
+- [Kaggle Course](https://www.kaggle.com/learn-guide/5-day-agents)
+- [Live Demo](https://sakeeb-ai-agent-chat.hf.space)
+- [GitHub Repository](https://github.com/Sakeeb91/ai-agents-course)
