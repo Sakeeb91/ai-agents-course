@@ -268,15 +268,26 @@ def parallel_chat(briefing_type):
     if not briefing_type or not briefing_type.strip():
         return "Please select briefing topics."
 
-    # Parse the topics
-    topics = [t.strip() for t in briefing_type.split(",")]
+    # Parse the topics - handle both "," and " and " separators
+    topics_str = briefing_type.replace(" and ", ", ")
+    topics = [t.strip() for t in topics_str.split(",") if t.strip()]
 
     if len(topics) != 3:
         return f"Please provide exactly 3 topics separated by commas. Got {len(topics)} topics."
 
+    # Clean topic names to create valid agent names (remove spaces, special chars)
+    def clean_agent_name(topic):
+        # Remove special characters and replace spaces with underscores
+        import re
+        clean = re.sub(r'[^a-zA-Z0-9_]', '_', topic)
+        # Ensure it starts with a letter
+        if clean and not clean[0].isalpha():
+            clean = 'Topic_' + clean
+        return clean
+
     # Build dynamic parallel research system
     agent1 = Agent(
-        name=f"{topics[0]}Researcher",
+        name=f"{clean_agent_name(topics[0])}_Researcher",
         model="gemini-2.5-flash-lite",
         instruction=f"""Research the latest trends in {topics[0]}. Include 3 key developments,
         the main companies/organizations involved, and the potential impact. Keep the report concise (100-150 words).""",
@@ -285,7 +296,7 @@ def parallel_chat(briefing_type):
     )
 
     agent2 = Agent(
-        name=f"{topics[1]}Researcher",
+        name=f"{clean_agent_name(topics[1])}_Researcher",
         model="gemini-2.5-flash-lite",
         instruction=f"""Research recent developments in {topics[1]}. Include 3 significant advances,
         their practical applications, and estimated timelines. Keep the report concise (100-150 words).""",
@@ -294,7 +305,7 @@ def parallel_chat(briefing_type):
     )
 
     agent3 = Agent(
-        name=f"{topics[2]}Researcher",
+        name=f"{clean_agent_name(topics[2])}_Researcher",
         model="gemini-2.5-flash-lite",
         instruction=f"""Research current trends in {topics[2]}. Include 3 key trends,
         their market implications, and the future outlook. Keep the report concise (100-150 words).""",
@@ -467,6 +478,18 @@ with gr.Blocks(
                 label="Summary",
             )
 
+            research_status = gr.Textbox(
+                label="Status",
+                value="",
+                interactive=False,
+                visible=True,
+            )
+
+            def research_with_status(topic):
+                if not topic or not topic.strip():
+                    return "Please enter a research topic.", "❌ No topic provided"
+                return research_chat(topic), "✅ Research complete!"
+
             gr.Examples(
                 examples=[
                     "What are the latest advancements in quantum computing?",
@@ -476,7 +499,11 @@ with gr.Blocks(
                 inputs=research_topic,
             )
 
-            research_btn.click(research_chat, inputs=research_topic, outputs=research_output)
+            research_btn.click(
+                research_with_status,
+                inputs=research_topic,
+                outputs=[research_output, research_status]
+            )
 
         # Tab 3: Blog Pipeline (Day 1B)
         with gr.Tab("✏️ Blog Writer"):
@@ -499,6 +526,18 @@ with gr.Blocks(
                 label="Blog Post",
             )
 
+            blog_status = gr.Textbox(
+                label="Status",
+                value="",
+                interactive=False,
+                visible=True,
+            )
+
+            def blog_with_status(topic):
+                if not topic or not topic.strip():
+                    return "Please enter a blog topic.", "❌ No topic provided"
+                return blog_chat(topic), "✅ Blog post complete!"
+
             gr.Examples(
                 examples=[
                     "Benefits of multi-agent systems",
@@ -508,7 +547,11 @@ with gr.Blocks(
                 inputs=blog_topic,
             )
 
-            blog_btn.click(blog_chat, inputs=blog_topic, outputs=blog_output)
+            blog_btn.click(
+                blog_with_status,
+                inputs=blog_topic,
+                outputs=[blog_output, blog_status]
+            )
 
         # Tab 4: Parallel Research (Day 1B)
         with gr.Tab("📊 Executive Briefing"):
@@ -536,7 +579,23 @@ with gr.Blocks(
                 label="Executive Summary",
             )
 
-            parallel_btn.click(parallel_chat, inputs=briefing_type, outputs=parallel_output)
+            parallel_status = gr.Textbox(
+                label="Status",
+                value="",
+                interactive=False,
+                visible=True,
+            )
+
+            def parallel_with_status(topics):
+                if not topics or not topics.strip():
+                    return "Please select briefing topics.", "❌ No topics selected"
+                return parallel_chat(topics), "✅ Executive briefing complete!"
+
+            parallel_btn.click(
+                parallel_with_status,
+                inputs=briefing_type,
+                outputs=[parallel_output, parallel_status]
+            )
 
         # Tab 5: About
         with gr.Tab("ℹ️ About"):
