@@ -395,7 +395,8 @@ jobs:
       - name: Install Hugging Face CLI
         run: |
           echo "📦 Installing Hugging Face CLI..."
-          pip install huggingface_hub[cli]
+          pip install --upgrade pip
+          pip install -U "huggingface_hub[cli]"
           echo "✅ Hugging Face CLI installed"
 
       - name: Login to Hugging Face
