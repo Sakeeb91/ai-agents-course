@@ -55,14 +55,16 @@ print("✅ Simple Agent initialized")
 # MULTI-AGENT SYSTEMS (Day 1B)
 # ============================================================================
 
-# 1. Research & Summarization System (LLM-based orchestration)
+# 1. Research & Summarization System (Sequential workflow)
 def build_research_system():
     research_agent = Agent(
         name="ResearchAgent",
         model="gemini-2.5-flash-lite",
-        instruction="""You are a specialized research agent. Your only job is to use the
-        google_search tool to find 2-3 pieces of relevant information on the given topic
-        and present the findings with citations.""",
+        instruction="""You are a specialized research agent.
+        Research the given topic thoroughly using google_search.
+        Find 3-5 pieces of relevant, current information.
+        Present your findings in a clear, structured format with sources.
+        Include key facts, statistics, and developments.""",
         tools=[google_search],
         output_key="research_findings",
     )
@@ -70,27 +72,26 @@ def build_research_system():
     summarizer_agent = Agent(
         name="SummarizerAgent",
         model="gemini-2.5-flash-lite",
-        instruction="""Read the provided research findings: {research_findings}
-        Create a concise summary in proper markdown format with:
-        - A clear header (## Summary)
-        - Bulleted list with 3-5 key points
-        - Use **bold** for important terms
-        Use proper markdown formatting.""",
+        instruction="""Read the research findings provided below and create a concise executive summary.
+
+Research Findings:
+{research_findings}
+
+Create a well-formatted markdown summary with:
+- A header (## Research Summary)
+- 4-6 bullet points highlighting the most important findings
+- Use **bold** for key terms and findings
+- Include specific details like numbers, dates, or names when available
+- Keep it concise but informative (150-200 words)
+
+Format your output in proper markdown.""",
         output_key="final_summary",
     )
 
-    root_agent = Agent(
-        name="ResearchCoordinator",
-        model="gemini-2.5-flash-lite",
-        instruction="""You are a research coordinator. Your goal is to answer the user's query by orchestrating a workflow.
-        1. First, you MUST call the `ResearchAgent` tool to find relevant information.
-        2. Next, after receiving the research findings, you MUST call the `SummarizerAgent` tool to create a concise summary.
-        3. Finally, present the final summary in proper markdown format to the user as your response.
-        Format your final output with clear markdown headers, bullet points, and **bold** for emphasis.""",
-        tools=[
-            AgentTool(research_agent),
-            AgentTool(summarizer_agent)
-        ],
+    # Use Sequential workflow instead of LLM orchestration for reliability
+    root_agent = SequentialAgent(
+        name="ResearchPipeline",
+        sub_agents=[research_agent, summarizer_agent],
     )
 
     return root_agent
@@ -449,10 +450,10 @@ with gr.Blocks(
         with gr.Tab("🔍 Research System"):
             gr.Markdown("""
                 ### Research & Summarization System (Day 1B)
-                Multi-agent system with **LLM-based orchestration**:
-                1. **Research Agent** searches the web for information
-                2. **Summarizer Agent** creates a concise summary
-                3. **Coordinator Agent** orchestrates the workflow
+                Multi-agent system with **Sequential workflow**:
+                1. **Research Agent** searches the web for current information
+                2. **Summarizer Agent** creates a concise markdown summary
+                3. Agents execute in guaranteed order for reliable results
             """)
 
             research_topic = gr.Textbox(
