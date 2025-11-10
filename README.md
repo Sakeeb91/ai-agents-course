@@ -2,6 +2,7 @@
 
 > A comprehensive AI agent chat application built with Google's Agent Development Kit (ADK) and Gemini 2.5 Flash Lite, featuring multiple deployment options and beautiful custom UIs.
 
+**Kaggle Course**: [5-Day AI Agents Course](https://www.kaggle.com/learn-guide/5-day-agents)
 **Live Demo**: [Hugging Face Space](https://huggingface.co/spaces/Sakeeb/ai-multi-agent-chat)
 
 ## Introduction
@@ -34,6 +35,4 @@ The course covers foundational concepts of AI agents using Google's Agent Develo
 ## Resources
 
 - [ADK Documentation](https://google.github.io/adk-docs/)
-- [Kaggle Course](https://www.kaggle.com/learn-guide/5-day-agents)
-- [Live Demo](https://sakeeb-ai-agent-chat.hf.space)
-- [GitHub Repository](https://github.com/Sakeeb91/ai-agents-course)
+- [Kaggle 5-Day AI Agents Course](https://www.kaggle.com/learn-guide/5-day-agents)
