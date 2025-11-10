@@ -2,7 +2,7 @@
 
 > A comprehensive AI agent chat application built with Google's Agent Development Kit (ADK) and Gemini 2.5 Flash Lite, featuring multiple deployment options and beautiful custom UIs.
 
-**Live Demo**: [Hugging Face Space]((https://huggingface.co/spaces/Sakeeb/ai-multi-agent-chat))
+**Live Demo**: [Hugging Face Space](https://huggingface.co/spaces/Sakeeb/ai-multi-agent-chat)
 
 ## Introduction
 
