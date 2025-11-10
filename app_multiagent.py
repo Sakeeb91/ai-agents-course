@@ -586,16 +586,24 @@ with gr.Blocks(
                 1. **Tech, Health, Finance Researchers** work in parallel
                 2. Each searches for trends in their domain (simultaneously!)
                 3. **Aggregator Agent** combines findings into executive summary
+
+                **Enter exactly three comma-separated topics** to build a custom briefing.
             """)
 
-            briefing_type = gr.Dropdown(
-                choices=[
+            briefing_type = gr.Textbox(
+                label="Briefing Topics (3 comma-separated domains)",
+                value="Technology, Health, and Finance",
+                placeholder="e.g., AI Safety, Robotics, Supply Chain Automation",
+            )
+
+            gr.Examples(
+                examples=[
                     "Technology, Health, and Finance",
                     "AI, Sustainability, and Education",
                     "Cybersecurity, Cloud Computing, and DevOps",
                 ],
-                value="Technology, Health, and Finance",
-                label="Briefing Topics",
+                inputs=briefing_type,
+                label="Suggested combinations",
             )
 
             parallel_btn = gr.Button("📈 Generate Executive Briefing", variant="primary")
@@ -613,7 +621,7 @@ with gr.Blocks(
 
             def parallel_with_status(topics):
                 if not topics or not topics.strip():
-                    return "Please select briefing topics.", "❌ No topics selected"
+                    return "Please enter briefing topics.", "❌ No topics provided"
                 return parallel_chat(topics), "✅ Executive briefing complete!"
 
             parallel_btn.click(
