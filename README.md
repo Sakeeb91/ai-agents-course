@@ -29,7 +29,7 @@ The course covers foundational concepts of AI agents using Google's Agent Develo
 - [DAY_1A_LEARNINGS.md](DAY_1A_LEARNINGS.md) - Day 1A comprehensive guide
 - [DAY_1B_LEARNINGS.md](DAY_1B_LEARNINGS.md) - Day 1B Multi-agent architectures guide
 - [GRADIO_DEPLOYMENT.md](GRADIO_DEPLOYMENT.md) - Deployment guide
-- [CLAUDE.md](CLAUDE.md) - Complete session summary
+
 
 ## Resources
 
