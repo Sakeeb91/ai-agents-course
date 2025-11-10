@@ -1574,11 +1574,3 @@ agent = Agent(output_key="current_draft")
 | Report generation | Sequential + Parallel | Hybrid approach |
 
 ---
-
-## 🎓 Congratulations!
-
-You've gone from simple single agents to sophisticated multi-agent systems. You understand not just **how** to build agent teams, but **why** each pattern exists and **when** to use it.
-
-This architectural knowledge is the foundation for building production-grade agent applications!
-
-**Ready for Day 2? Let's build custom tools! 🛠️**
