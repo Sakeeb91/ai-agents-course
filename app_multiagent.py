@@ -219,10 +219,26 @@ print("=" * 80)
 def run_agent_query(runner, message):
     """Run an agent query and return the response"""
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(runner.run_debug(message))
-        loop.close()
+        # Try to get the current event loop, create new one if needed
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Run the query
+        if loop.is_running():
+            # If loop is already running (in async context), use run_in_executor
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                response = pool.submit(
+                    lambda: asyncio.run(runner.run_debug(message))
+                ).result()
+        else:
+            response = loop.run_until_complete(runner.run_debug(message))
 
         if response and len(response) > 0:
             return response[0].content.parts[0].text
@@ -231,6 +247,8 @@ def run_agent_query(runner, message):
 
     except Exception as e:
         print(f"❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return f"❌ Error: {str(e)}"
 
 
