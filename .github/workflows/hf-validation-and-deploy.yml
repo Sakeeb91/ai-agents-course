@@ -408,29 +408,32 @@ jobs:
             echo "❌ HUGGINGFACE_TOKEN secret not set"
             exit 1
           fi
-          huggingface-cli login --token $HF_TOKEN
+          hf auth login --token "$HF_TOKEN"
           echo "✅ Logged in to Hugging Face"
 
       - name: Deploy app.py to Space
         env:
           HF_USERNAME: ${{ env.HF_USERNAME }}
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
           echo "🚀 Deploying app.py to Hugging Face Space..."
           SPACE_NAME="ai-agent-chat"
           FULL_REPO="${HF_USERNAME}/${SPACE_NAME}"
           
-          # Check if Space exists, create if not
-          if ! huggingface-cli repo info "spaces/$FULL_REPO" &> /dev/null; then
-            echo "📝 Creating Space: $FULL_REPO"
-            huggingface-cli repo create "$SPACE_NAME" --type space --space_sdk gradio || true
+          if [ -z "$HF_TOKEN" ]; then
+            echo "❌ HUGGINGFACE_TOKEN secret not set"
+            exit 1
           fi
+          
+          echo "📝 Ensuring Space exists..."
+          hf repo create "$FULL_REPO" --repo-type space --space-sdk gradio --exist-ok --token "$HF_TOKEN"
           
           # Upload files
           echo "📤 Uploading app.py..."
-          huggingface-cli upload "spaces/$FULL_REPO" app.py app.py --repo-type space
+          hf upload --repo-type space "$FULL_REPO" app.py app.py --token "$HF_TOKEN"
           
           echo "📤 Uploading requirements.txt..."
-          huggingface-cli upload "spaces/$FULL_REPO" requirements.txt requirements.txt --repo-type space
+          hf upload --repo-type space "$FULL_REPO" requirements.txt requirements.txt --token "$HF_TOKEN"
           
           echo "✅ app.py deployed to: https://huggingface.co/spaces/$FULL_REPO"
           echo "🌐 Live at: https://${HF_USERNAME}-${SPACE_NAME}.hf.space"
@@ -438,23 +441,26 @@ jobs:
       - name: Deploy app_multiagent.py to Space
         env:
           HF_USERNAME: ${{ env.HF_USERNAME }}
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
           echo "🚀 Deploying app_multiagent.py to Hugging Face Space..."
           SPACE_NAME="ai-multi-agent-chat"
           FULL_REPO="${HF_USERNAME}/${SPACE_NAME}"
           
-          # Check if Space exists, create if not
-          if ! huggingface-cli repo info "spaces/$FULL_REPO" &> /dev/null; then
-            echo "📝 Creating Space: $FULL_REPO"
-            huggingface-cli repo create "$SPACE_NAME" --type space --space_sdk gradio || true
+          if [ -z "$HF_TOKEN" ]; then
+            echo "❌ HUGGINGFACE_TOKEN secret not set"
+            exit 1
           fi
+          
+          echo "📝 Ensuring Space exists..."
+          hf repo create "$FULL_REPO" --repo-type space --space-sdk gradio --exist-ok --token "$HF_TOKEN"
           
           # Upload files (rename app_multiagent.py to app.py for HF Spaces)
           echo "📤 Uploading app_multiagent.py as app.py..."
-          huggingface-cli upload "spaces/$FULL_REPO" app_multiagent.py app.py --repo-type space
+          hf upload --repo-type space "$FULL_REPO" app_multiagent.py app.py --token "$HF_TOKEN"
           
           echo "📤 Uploading requirements.txt..."
-          huggingface-cli upload "spaces/$FULL_REPO" requirements.txt requirements.txt --repo-type space
+          hf upload --repo-type space "$FULL_REPO" requirements.txt requirements.txt --token "$HF_TOKEN"
           
           echo "✅ app_multiagent.py deployed to: https://huggingface.co/spaces/$FULL_REPO"
           echo "🌐 Live at: https://${HF_USERNAME}-${SPACE_NAME}.hf.space"
@@ -470,4 +476,3 @@ jobs:
           echo "- **Multi-Agent**: https://${HF_USERNAME}-ai-multi-agent-chat.hf.space" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "⚠️ **Note**: Don't forget to add GOOGLE_API_KEY as a secret in Space settings!" >> $GITHUB_STEP_SUMMARY
-
